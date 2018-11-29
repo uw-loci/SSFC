@@ -1,0 +1,1 @@
+This folder contains a small representative data set of fluorescent cells that can be used as is to see how the processing code functions
