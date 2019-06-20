@@ -1,4 +1,4 @@
-function [ ] = Launch_Spectrally_Split_Swept_Field_Confocal_Processing( )
+function [ ] = Launch_SSFC_Processing( )
 %% Spectrally-Split Swpet Field Confocal Processing Launcher
 %   This launches the spectrally-split swept ffield confocal processing GUI
 % 
@@ -25,6 +25,8 @@ hpath = pwd;
 
 %% Add Required Path
 addpath('./Functions');
+addpath('D:/Fiji.app/scripts')
+% Replace this^^ path with your path to your FIJI distribution. 
 
 
 %% Launch GUI Function
