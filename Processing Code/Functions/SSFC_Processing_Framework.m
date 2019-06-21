@@ -58,14 +58,14 @@ fprintf('\nGenerating Calibration Map\n');
 % [ img_sets ] = SSFC_data_cube_constructor_v2( img_sets, spectral_binning, n_fluorophores ); 
 % 
 % 
-% %% Save Individual Spectral Image Stacks
-% if save_intermediaries_flag == 1
-%     fprintf('\nSaving Individual Spectral Stacks\n');
-%     spectral_stack_saver_SSFC(img_sets, file_path, img_save_type, ...
-%         bit_depth);
-% end
-% 
-% 
+%% Save Individual Spectral Image Stacks
+if save_intermediaries_flag == 1
+    fprintf('\nSaving Individual Spectral Stacks\n');
+    spectral_stack_saver_SSFC(img_sets, file_path, img_save_type, ...
+        bit_depth);
+end
+
+
 % %% Tiling
 % img_cube = 0;
 % if strcmp(proc_mode, 'Image Stack') || strcmp(proc_mode, 'Video')
