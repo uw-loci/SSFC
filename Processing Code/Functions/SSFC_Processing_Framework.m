@@ -44,11 +44,15 @@ fprintf('\nLoading Sub-Images\n');
     img_loader_SSFC( file_path, num_line, pos_file_path );
 
 
-% %% Straighten
-% fprintf('\nStraightening Sub-Images\n');
-% [ img_sets ] = SSFC_straightener_v3( img_sets, num_line, wavelength_pixel_buffer );
-% 
-% 
+%% Generate Calibration Map
+fprintf('\nGenerating Calibration Map\n');
+[ calibration_map ] = SSFC_calibration_spectra_constructor_v2( ...
+    wavelength_range, calibration_path );
+
+
+
+%%% img_sets.images is active right now.
+
 % %% Reconstruct  
 % fprintf('\nConstructing Data Cubes\n');
 % [ img_sets ] = SSFC_data_cube_constructor_v2( img_sets, spectral_binning, n_fluorophores ); 
