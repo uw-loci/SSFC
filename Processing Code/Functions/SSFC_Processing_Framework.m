@@ -50,14 +50,12 @@ fprintf('\nGenerating Calibration Map\n');
     wavelength_range, calibration_path );
 
 
+%% Reconstruct  
+fprintf('\nConstructing Data Cubes\n');
+[ img_sets ] = SSFC_data_cube_constructor_v3( img_sets, ...
+    spectral_binning, calibration_map, wavelength_range ); 
 
-%%% img_sets.images is active right now.
 
-% %% Reconstruct  
-% fprintf('\nConstructing Data Cubes\n');
-% [ img_sets ] = SSFC_data_cube_constructor_v2( img_sets, spectral_binning, n_fluorophores ); 
-% 
-% 
 %% Save Individual Spectral Image Stacks
 if save_intermediaries_flag == 1
     fprintf('\nSaving Individual Spectral Stacks\n');
