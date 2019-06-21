@@ -33,11 +33,11 @@ addpath('Functions\bfmatlab');
 home_path = pwd;
 
 
-% %% Generate Necessary Arch Paths and Extract Information from Folder Name
-% [ run_name, file_path, arch_path, num_line] = ...
-%     arch_path_generator_SSFC( file_path );
-% 
-% 
+%% Generate Necessary Arch Paths and Extract Information from Folder Name
+[ run_name, file_path, arch_path] = ...
+    arch_path_generator_SSFC_v2( file_path );
+
+
 % %% Load in Images
 % fprintf('\nLoading Sub-Images\n');
 % [ img_sets, xml_name, env_name, img_file_type, xyz_map ] = ...
