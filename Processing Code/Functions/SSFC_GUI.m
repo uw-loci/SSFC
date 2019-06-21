@@ -130,6 +130,10 @@ threshold_percent = str2double(get(handles.threshold_percent, ...
 spectral_binning = str2double(get(handles.spectral_binning, 'String'));
 num_line = str2double(get(handles.num_line, 'String'));
 
+wavelength_range = [...
+    str2double(get(handles.minimum_wavelength, 'String')), ...
+    str2double(get(handles.maximum_wavelength, 'String'))];
+
 switch get(handles.bit_depth, 'Value')
     case 1
         bit_depth = 8;
@@ -155,7 +159,7 @@ else
     SSFC_Processing_Framework(proc_mode, spectral_binning, ...
         save_intermediaries_flag, img_save_type, bit_depth, fpath, ...
         overlap_percent, threshold_percent, pos_file_path, cpath, ...
-        num_line);
+        num_line, wavelength_range);
     % Close GUI
     closereq;
 end
