@@ -51,6 +51,10 @@ fprintf('\nGenerating Calibration Map\n');
     wavelength_range, calibration_path);
 
 
+%% Sub Image Straightener 
+img_sets = SSFC_straightener_v4( img_sets, prism_angle );
+
+
 %% Reconstruct  
 fprintf('\nConstructing Data Cubes\n');
 [ img_sets ] = SSFC_data_cube_constructor_v3( img_sets, ...
