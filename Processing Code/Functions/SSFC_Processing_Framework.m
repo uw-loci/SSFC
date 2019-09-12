@@ -41,7 +41,7 @@ home_path = pwd;
 %% Load in Images
 fprintf('\nLoading Sub-Images\n');
 [ img_sets, xml_name, env_name, img_file_type, xyz_map ] = ...
-    img_loader_SSFC( file_path, num_line, pos_file_path );
+    img_loader_SSFC_v2( file_path );
 
 
 %% Generate Calibration Map

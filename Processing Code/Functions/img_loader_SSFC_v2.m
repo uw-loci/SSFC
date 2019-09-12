@@ -1,5 +1,5 @@
 function [ img_sets, xml_name, env_name, img_file_type, xyz_map ] ...
-    = img_loader_SSFC( file_path, num_line, pos_file_path )
+    = img_loader_SSFC_v2( file_path )
 %% Image Loader
 %   By: Niklas Gahm
 %   2018/07/23
@@ -11,6 +11,9 @@ function [ img_sets, xml_name, env_name, img_file_type, xyz_map ] ...
 %   2018/07/23 - Finished 
 %   2018/08/20 - Adapted from SETI project for the SSFC Project
 
+
+
+%%%% TEMPORARY FORM TO GET ANYTHING EVEN WORKING
 
 
 %% Setup Navigation
@@ -25,26 +28,24 @@ dir_list = dir_list(3:end); % Removes system folders
 
 %% Handle/Load in Position File
 % Check if position file is in current directory 
+pos_file_flag = 0;
 for i = 1:numel(dir_list)
     if strcmp('.xy', dir_list(i).name(end-2:end))
         pos_file_path = [file_path '\' dir_list(i).name];
         dir_list = dir_list([1:i-1, i+1:end]);
+        pos_file_flag = 1;
         break;
     end
 end
 
 % Load in Position File Also handles the single position case
-xyz_map = SSFC_position_file_loader(pos_file_path);
+xyz_map = [];
+if pos_file_flag == 1
+    xyz_map = SSFC_position_file_loader(pos_file_path);
+end
 
 
 %% Account for .env file, .xml file, MIP folder, References Folder)
-if rem((numel(dir_list) - 4), num_line) == 0
-    num_imgs = (numel(dir_list) - 4) / num_line; 
-    num_t = num_imgs / numel(xyz_map);
-else
-    error('Incorrect number of files in the data to be processed folder.');
-end
-
 % Remove MIP folder and References Folder
 if dir_list(1).isdir
     dir_list = dir_list(3:end);
@@ -99,28 +100,12 @@ dir_list = dir_list([1:(ind_small-1), (ind_small+1):(ind_large-1), ...
 %% Setup Img Set Structs and Fill in img_sets.images
 img_sets = struct;
 % Use Bioformats to Load in Image
-for i = 1:num_t
-    for j = 1:numel(xyz_map)
-        current_img_ind = j + ((i-1) * numel(xyz_map));
-        img_sets(current_img_ind).images = cell(1, num_line);
-        
-        % Assign position
-        img_sets(current_img_ind).x_pos = xyz_map(j).x_pos;
-        img_sets(current_img_ind).y_pos = xyz_map(j).y_pos;
-        img_sets(current_img_ind).z_pos = xyz_map(j).z_pos;
-        
-        % Assign time point
-        img_sets(current_img_ind).t = i; 
-        
-        % Calculate Starting Point for Loading Image
-        start_point = num_line * (current_img_ind - 1);
-        
-        % Load in Images
-        for k = 1:num_line
-            bf_reader_element = bfopen(dir_list((start_point + k)).name);
-            img_sets(current_img_ind).images{k} = ...
-                double(bf_reader_element{1,1}{1,1});
-        end
+bf_reader_element = bfopen(dir_list(1).name);
+for i = 1:250 %%%% TEMPORARY TO SPEED UP PROCESSING.
+% for i = 1:(size(bf_reader_element,1)/2)
+    temp = bf_reader_element{(1+((i-1)*2)), 1};
+    for j = 1:size(temp,1)
+        img_sets(i).images{j} = double(temp{j,1});
     end
 end
 
