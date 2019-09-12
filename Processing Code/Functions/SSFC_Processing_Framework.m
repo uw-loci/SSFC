@@ -46,8 +46,9 @@ fprintf('\nLoading Sub-Images\n');
 
 %% Generate Calibration Map
 fprintf('\nGenerating Calibration Map\n');
-[ calibration_map ] = SSFC_calibration_spectra_constructor_v2( ...
-    wavelength_range, calibration_path );
+[calibration_map, prism_angle, band_map, wavelength_range] = ...
+    SSFC_calibration_spectra_constructor_v2( ...
+    wavelength_range, calibration_path);
 
 
 %% Reconstruct  

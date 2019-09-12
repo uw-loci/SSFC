@@ -1,5 +1,4 @@
-function [ calibration_space ] = ...
-    SSFC_calibration_spectra_constructor_v2( ...
+function [ calibration_space, prism_angle, band_map, wavelength_range ] = SSFC_calibration_spectra_constructor_v2( ...
     wavelength_range, calibration_folder )
 %% SSFC Calibration Spectra Constructor
 %   By: Niklas Gahm
@@ -11,7 +10,7 @@ function [ calibration_space ] = ...
 %
 %
 %   2019/05/17 - Started
-%   2019/06/19 - Finished
+%   2019/05/19 - Finished
 
 
 
@@ -151,17 +150,20 @@ search_ind(strongest_line) = [];
 % Initialize the Offset Cell
 calibration_set(strongest_line).offset = 0;
 
-% Initialize Optimizer[optimizer, metric] = imregconfig('monomodal');
-[optimizer, metric] = imregconfig('monomodal');
-optimizer.MaximumIterations = 300;
-optimizer.MaximumStepLength = 0.02;
-
-% Register Images to the Strongest 
+% Sum Images vertically, find peaks, and determine relative offset 
+ref_line_summed = sum(calibration_set(strongest_line).image_rot, 1);
+[peaks,loc_ref] = findpeaks( smooth(ref_line_summed) );
+[~, ind] = maxk( peaks, num_bands);
+loc_ref = loc_ref(sort(ind));
 for i = 1:numel(search_ind)
-    tform = imregtform(calibration_set(search_ind(i)).image_rot, ...
-        calibration_set(strongest_line).image_rot, 'translation', ...
-        optimizer, metric);
-    calibration_set(search_ind(i)).offset = tform.T(3);
+    comparison_line = sum(calibration_set(search_ind(i)).image_rot, 1);
+    
+    [peaks, loc_comparison] = findpeaks( smooth(comparison_line) );
+    [~, ind] = maxk( peaks, num_bands);
+    loc_comparison = loc_comparison(sort(ind));
+    
+    % Calculate the Between Band Distance
+    calibration_set(search_ind(i)).offset = mean(loc_ref-loc_comparison);
 end
 
 
@@ -173,16 +175,35 @@ offsets = extractfield(calibration_set, 'offset');
 p_coeffs = polyfit(wavelengths, offsets, 1);
 offset_range = polyval(p_coeffs, wavelength_range);
 
-% Check that the range isn't too large
-if abs(offset_range(2)-offset_range(1)) > avg_dist_btw_bands
-    error(['\nInput Theoretical Wavelength Range is larger than the' ...
-        ' actual range.\n']);
+% Check direction wavelength offsets are going
+if offset_range(2) < offset_range(1)
+    % Decreasing direction needs adjustement for interpolation
+    wavelengths = flip(wavelengths);
+    wavelength_range = flip(wavelength_range);
+    offsets = flip(offsets) - offsets(end);
+    offset_range = flip(offset_range) - offset_range(2);
 end
 
-
-%%%% This can be made more robust by changing the error check into a
-%%%% warning and programmatically adjusting the theoretical wavelength
-%%%% range to fit the actual range.
+% Check that the range isn't too large
+if abs(offset_range(2)-offset_range(1)) > avg_dist_btw_bands
+    warning(['Input Theoretical Wavelength Range is larger than the' ...
+        ' actual range.']); 
+    
+    offset_range_old = offset_range;
+    
+    % Adjust Offset Range
+    overhang = ceil((abs(offset_range(2)-offset_range(1)) - ...
+        avg_dist_btw_bands)/2);
+    offset_range(1) = offset_range(1) + overhang;
+    offset_range(2) = offset_range(2) - overhang;
+    
+    % Adjust Wavelength Range
+    wavelength_range = interp1(offset_range_old, wavelength_range, ...
+        offset_range, 'linear', 0);
+    
+    fprintf(['\n\nNew Wavelength Range: ' num2str(wavelength_range(1)) ...
+        'nm to ' num2str(wavelength_range(2)) 'nm\n\n']);
+end
 
 
 
@@ -201,17 +222,20 @@ end
 % band and encompasses the whole wavelength range 
 offsets = [offset_range(1), offsets, offset_range(2)] - offset_range(1);
 
-% Check direction wavelength offsets are going
-if offset_range(2) < offset_range(1)
-    % Decreasing direction needs adjustement for interpolation
-    wavelengths = flip(wavelengths);
-    offsets = flip(offsets) - offsets(end);
-end
-
 % Generate Positional Offsets
 positional_offsets = mod( (avg_starting_offset - ...
     fix(avg_starting_offset)):1:ceil(avg_dist_btw_bands * num_bands), ...
     avg_dist_btw_bands);
+
+% Generate Band Map Spacing
+band_map = ones(1, numel(positional_offsets));
+counter = 1;
+for i = 2:numel(positional_offsets)
+    if positional_offsets(i) < positional_offsets(i-1)
+        counter = counter + 1;
+    end
+    band_map(i) = counter;
+end
 
 % Pad the start to match the dark region of the rotated calibration images
 pad_count = fix(avg_starting_offset);
@@ -219,6 +243,7 @@ pad_count = fix(avg_starting_offset);
 % be zeroed during interpolation
 pad_vector = ones(1,pad_count) * (avg_dist_btw_bands + 10);
 spectral_band = [pad_vector, positional_offsets];
+band_map = [(pad_vector.*0), band_map];
 
 % Pad the back to match the rotated image size
 if numel(spectral_band) < size(calibration_set(1).image_rot,2)
@@ -228,6 +253,7 @@ if numel(spectral_band) < size(calibration_set(1).image_rot,2)
     % will be zeroed during interpolation
     pad_vector = ones(1,pad_count) * (avg_dist_btw_bands + 10);
     spectral_band = [spectral_band, pad_vector];
+    band_map = [band_map, (pad_vector .* 0)];
 end
 
 % Interpolate to convert to spectral values
@@ -235,22 +261,10 @@ spectral_band = interp1(offsets, wavelengths, spectral_band, ...
     'linear', 0);
 
 
+%% Generate Calibration Space for the rotated sub-image approach
+calibration_space = repmat(spectral_band, ...
+    [size(calibration_set(1).image_rot,1), 1]);
+band_map = repmat(band_map, [size(calibration_set(1).image_rot,1), 1]);
 
-%% Generate Calibration Space
-% Repeat the row to generate the whole pre-rotated image.
-% Need to go larger than the original image to remove dark bands at the top
-% and bottom
-spectral_band = repmat(spectral_band, ...
-    [(size(calibration_set(1).image_rot,1)*2), 1]);
-
-% Rotate the spectral_band by the Prism Angle
-calibration_space = imrotate(spectral_band, (-1*prism_angle), ...
-    'bilinear', 'crop');
-
-% Remove the rotational padding by keeping only the center
-calibration_space = calibration_space(...
-    (size(calibration_set(1).image_rot,1)/2):end, :);
-calibration_space = calibration_space(...
-    1:size(calibration_set(1).image_rot,1), :);
 
 end
