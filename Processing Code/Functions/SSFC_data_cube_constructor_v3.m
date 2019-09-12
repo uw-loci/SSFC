@@ -1,5 +1,5 @@
 function [ img_sets ] = SSFC_data_cube_constructor_v3( ...
-    img_sets, spectral_binning, calibration_map, wavelength_range )
+    img_sets, calibration_map, wavelength_range, band_map, spectral_boundary )
 %% SSFC Data Cube Constructor
 %   By: Niklas Gahm
 %   2018/11/26
@@ -23,36 +23,69 @@ function [ img_sets ] = SSFC_data_cube_constructor_v3( ...
 
 % Initialize bin masks
 bin_masks = zeros(size(calibration_map, 1), size(calibration_map, 2), ...
-    spectral_binning);
+    numel(spectral_boundary) + 1);
 
-% Calculate bin bounds
-bin_bounds = linspace(wavelength_range(1), wavelength_range(2), ...
-    (spectral_binning + 1));
+% Setup bin bounds
+if wavelength_range(1) < wavelength_range(2)
+    bin_bounds = [wavelength_range(1), sort(spectral_boundary), ...
+        wavelength_range(2)];
+else
+    wavelength_range = flip(wavelength_range);
+    bin_bounds = [wavelength_range(1), sort(spectral_boundary, ...
+        'descend'), wavelength_range(2)];
+end
 
 % Remove the last bound since it is superfluous for the processing
 bin_bounds = bin_bounds(1:(end-1));
 
 % Sequentially convert calibration map into bin masks
-for i = 1:spectral_binning
-    bin_masks(:,:,i) = calibration_map;
-    bin_masks(bin_masks(:,:,i)<bin_bounds(end-(i-1))) = 0;
-    bin_masks(bin_masks(:,:,i)>0) = 1;
+for i = 1:(numel(spectral_boundary) + 1)
+    temp = calibration_map; 
+    temp(temp < bin_bounds(end-(i-1))) = 0;
+    temp(temp > 0) = 1;
+    bin_masks(:,:,i) = temp;
     calibration_map(calibration_map >= bin_bounds(end-(i-1))) = 0;
 end
 
+% Sequentally convert the band map into band masks and get the band
+% starting index
+num_bands = max(max(band_map));
+band_masks = zeros(size(band_map, 1), size(band_map, 2), num_bands);
+band_start_ind = zeros(1, num_bands);
+for i = 1:num_bands
+    temp = band_map;
+    temp(temp < (num_bands - (i-1))) = 0;
+    temp(temp > 0) = 1;
+    band_masks(:,:,i) = temp;
+    band_map(band_map >= (num_bands - (i-1))) = 0;
+    temp = sum(temp,1);
+    for j = 1:numel(temp)
+        if temp(j) > 0 
+            band_start_ind(i) = j;
+            break;
+        end
+    end
+end
 
 
 %% Separate Each Sub-Image Into the Binned Components 
 for i = 1:numel(img_sets)
     % Initialize Output Image
     img_sets(i).images_reconstructed = ...
-        zeros(size(img_sets(i).images{1}, 1), ...
-        size(img_sets(i).images{1}, 2), 1, spectral_binning);
+        zeros(size(img_sets(i).images_straightened{1}, 1), ...
+        size(img_sets(i).images_straightened{1}, 2), 1, ...
+        (numel(spectral_boundary) + 1));
     
     % Process Each Sub-Image
-    for j = 1:numel(img_sets(i).images)
-        for k = 1:spectral_binning
-            img_sets(i).images_reconstructed(:,:,:,k) = img_sets(i).images_reconstructed(:,:,:,k) + (bin_masks(:,:,k).*img_sets(i).images(j));
+    for j = 1:numel(img_sets(i).images_straightened)
+        for k = 1:(numel(spectral_boundary) + 1)
+            temp = img_sets(i).images_straightened{j} .* bin_masks(:,:,k);
+            for m = 1:num_bands
+                temp_2 = temp .* band_masks(:,:,m);
+                temp_2 = temp_2(:,any(temp_2,1));
+                img_sets(i).images_reconstructed(:, ((j-1) + ...
+                    band_start_ind(m)), 1, k) = mean(temp_2, 2);
+            end
         end
     end
     
@@ -62,6 +95,6 @@ end
 %% Clean Memory Usage
 % img_sets.images is not used after this point, but still hogs memory so 
 % deleting it is advantageous. 
-img_sets = rmfield(img_sets, 'images');
+img_sets = rmfield(img_sets, 'images_straightened');
 
 end

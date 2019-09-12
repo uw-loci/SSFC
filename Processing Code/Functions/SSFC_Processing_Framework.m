@@ -57,8 +57,9 @@ img_sets = SSFC_straightener_v4( img_sets, prism_angle );
 
 %% Reconstruct  
 fprintf('\nConstructing Data Cubes\n');
-[ img_sets ] = SSFC_data_cube_constructor_v3( img_sets, ...
-    spectral_binning, calibration_map, wavelength_range ); 
+[ img_sets ] = SSFC_data_cube_constructor_v3( ...
+    img_sets, calibration_map, wavelength_range, band_map, ...
+    spectral_boundary );
 
 
 %% Save Individual Spectral Image Stacks
