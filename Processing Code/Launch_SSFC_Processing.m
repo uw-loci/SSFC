@@ -25,8 +25,6 @@ hpath = pwd;
 
 %% Add Required Path
 addpath('./Functions');
-addpath('D:/Fiji.app/scripts')
-% Replace this^^ path with your path to your FIJI distribution. 
 
 
 %% Launch GUI Function

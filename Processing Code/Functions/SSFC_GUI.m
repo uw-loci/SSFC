@@ -62,6 +62,8 @@ global position_file_flag
 position_file_flag = 0;
 global calibration_set_flag
 calibration_set_flag = 0;
+global last_path
+last_path = pwd;
 
 % Set Initial Panel Visibility
 proc_mode_list = get(handles.proc_mode_select, 'String');
@@ -123,11 +125,10 @@ switch get(handles.img_save_type_tif, 'Value')
         error('Invalid Image Save Type Selected');
 end
 
-overlap_percent = str2double(get(handles.overlap_percent, 'String')) / 100;
-threshold_percent = str2double(get(handles.threshold_percent, ...
-    'String')) / 100;
+pixel_size = str2double(get(handles.pixel_size, 'String'));
 
-spectral_binning = str2double(get(handles.spectral_binning, 'String'));
+spectral_binning = str2double(...
+    regexp(get(handles.spectral_binning, 'String'), ',', 'split'));
 num_line = str2double(get(handles.num_line, 'String'));
 
 wavelength_range = [...
@@ -158,8 +159,7 @@ else
     % Run Processing
     SSFC_Processing_Framework(proc_mode, spectral_binning, ...
         save_intermediaries_flag, img_save_type, bit_depth, fpath, ...
-        overlap_percent, threshold_percent, pos_file_path, cpath, ...
-        num_line, wavelength_range);
+        pixel_size, pos_file_path, cpath, num_line, wavelength_range);
     % Close GUI
     closereq;
 end
@@ -175,9 +175,11 @@ function folder_button_Callback(hObject, eventdata, handles)
 
 global path_set_flag 
 global fpath
+global last_path
+
 hpath = pwd;
-cd ..;
-fpath = uigetdir(pwd, 'Select Folder to Process');
+
+fpath = uigetdir(last_path, 'Select Folder to Process');
 cd(fpath);
 for i = 1:numel(fpath)
     if strcmp(filesep, fpath(end-(i-1)))
@@ -203,6 +205,7 @@ else
         'Invalid Folder Selection');
 end
 set(handles.process_folder_display, 'TooltipString', fpath);
+last_path = fpath;
 cd(hpath);
 
 
@@ -216,9 +219,11 @@ function calibration_folder_button_Callback(hObject, eventdata, handles)
 
 global calibration_set_flag 
 global cpath
+global last_path
+
 hpath = pwd;
-cd ..;
-cpath = uigetdir(pwd, 'Select Calibration Folder');
+
+cpath = uigetdir(last_path, 'Select Calibration Folder');
 cd(cpath);
 dir_list = dir;
 dir_list = dir_list(3:end);
@@ -226,6 +231,7 @@ dir_list = dir_list(3:end);
 if ~isempty(dir_list)
     set(handles.calibration_folder_display, 'String', cpath);
     calibration_set_flag = 1;
+    last_path = cpath;
 else
     set(handles.calibration_folder_display, 'String', ...
         'Invalid Folder Selection');
@@ -375,12 +381,14 @@ function position_file_button_Callback(hObject, eventdata, handles)
 
 global position_file_flag 
 global pos_file_path
+global last_path
 
 hpath = pwd;
-cd ..;
+cd(last_path);
 
 position_file_flag = 0;
-[pos_file_name, pos_file_path] = uigetfile('*.xy', 'Select Position File');
+[pos_file_name, pos_file_path] = uigetfile('*.xy', ...
+    'Select Position File');
 
 if pos_file_name == 0
     uiwait(msgbox('Please Select a Valid Position File'));
@@ -388,11 +396,12 @@ elseif ~strcmp(pos_file_name(end-2:end), '.xy')
     uiwait(msgbox('Please Select a Valid Position File'));
 else
     position_file_flag = 1;
+    last_path = pos_file_path;
     pos_file_path = [pos_file_path, pos_file_name];
+    set(handles.pos_file_display, 'String', pos_file_path);
+    set(handles.pos_file_display, 'TooltipString', pos_file_path);
 end
 
-set(handles.pos_file_display, 'String', pos_file_path);
-set(handles.pos_file_display, 'TooltipString', pos_file_path);
 cd(hpath);
 
 
@@ -434,7 +443,7 @@ set(handles.save_intermediaries_flag, 'TooltipString', ...
     save_intermediaries_flag_str_full);
 
 % Spectral Bin Size Tooltip
-spectral_binning_str_full = 'Select the number of spectral bins to use.';
+spectral_binning_str_full = 'Select the wavelength boundaries between spectral bins.';
 set(handles.text8, 'TooltipString', spectral_binning_str_full);
 set(handles.spectral_binning, 'TooltipString', spectral_binning_str_full);
 
@@ -448,16 +457,11 @@ img_save_type_tif_str_full = 'Select for all output images to be saved as .tif';
 set(handles.img_save_type_tif, 'TooltipString', ...
     img_save_type_tif_str_full);
 
-% Tiling Overlap Percentage Tooltip
-overlap_percent_str_full = 'The estimated percentage overlap between adjacent images in X and Y.';
+% Pixel Size Tooltip
+overlap_percent_str_full = 'Size of the pixel.';
 set(handles.text5, 'TooltipString', overlap_percent_str_full);
-set(handles.overlap_percent, 'TooltipString', overlap_percent_str_full);
+set(handles.pixel_size, 'TooltipString', overlap_percent_str_full);
 
-% Tiling Threshold Percentage Tooltip
-threshold_percent_str_full = 'The thresholding percentage of maximum intensity to be used for registration.';
-set(handles.text6, 'TooltipString', threshold_percent_str_full);
-set(handles.threshold_percent, 'TooltipString', ...
-    threshold_percent_str_full);
 
 % Select Folder to Process Tooltip
 folder_button_str_full = 'Push to select the folder containg all the data to process.';
