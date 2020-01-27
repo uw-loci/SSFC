@@ -38,6 +38,7 @@ if numel(dir_list) == 4
     
     % Folder Partially Sorted
     if unproc_found && ~proc_found
+        fprintf('\nCopying Files, This may take a while.\n');
         copyfile('Unprocessed Data', 'Processed Data');
         file_path = [arch_path '\Processed Data'];
         % Clean Navigation
@@ -53,6 +54,7 @@ if numel(dir_list) == 4
             'Overwrite Confirmation', 'Yes', 'No', 'No');
         switch confirmation_response
             case 'Yes'
+                fprintf('\nCopying Files, This may take a while.\n');
                 rmdir('Processed Data', 's');
                 copyfile('Unprocessed Data', 'Processed Data');
                 file_path = [arch_path '\Processed Data'];
@@ -74,7 +76,9 @@ end
 
 
 %% Sort Folder Appropriately
+fprintf('\nCopying Files, This may take a while.\n');
 movefile('*', 'Unprocessed Data');
+fprintf('\nCopying Files, This may take a while.\n');
 copyfile('Unprocessed Data', 'Processed Data');
 file_path = [arch_path '\Processed Data'];
 

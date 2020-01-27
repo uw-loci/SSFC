@@ -10,10 +10,8 @@ function [ img_sets, xml_name, env_name, img_file_type, xyz_map ] ...
 %   2018/07/23 - Started
 %   2018/07/23 - Finished 
 %   2018/08/20 - Adapted from SETI project for the SSFC Project
+%   2020/01/27 - Adapted for newest SSFC version
 
-
-
-%%%% TEMPORARY FORM TO GET ANYTHING EVEN WORKING
 
 
 %% Setup Navigation
@@ -59,7 +57,9 @@ end
 
 % Get .xml and .env file names
 xml_ind = 0; 
+xml_name = 'NA';
 env_ind = 0;
+env_name = 'NA';
 for i = 1:numel(dir_list)
     [~, temp_name, temp_type] = fileparts(dir_list(i).name);
     switch temp_type
@@ -77,8 +77,11 @@ for i = 1:numel(dir_list)
 end
 
 % Check both files were found
-if xml_ind == 0 || env_ind == 0
-    error('Missing either .xml or .env file.');
+if xml_ind == 0 
+    warning('\nMissing .xml file.\n');
+end
+if env_ind == 0
+    warning('\nMissing .env file.\n');
 end
 
 % Remove from directory list .xml and .env file names
@@ -89,9 +92,17 @@ else
     ind_small = env_ind;
     ind_large = xml_ind;
 end
-    
-dir_list = dir_list([1:(ind_small-1), (ind_small+1):(ind_large-1), ...
-    (ind_large+1):end]);
+
+if xml_ind ~= 0 && env_ind ~= 0
+    % Case where both files are present
+    dir_list = dir_list([1:(ind_small-1), (ind_small+1):(ind_large-1), ...
+        (ind_large+1):end]);
+elseif xml_ind == 0 && env_ind == 0
+    % Case where both files are missing
+else
+    % Case where one file is missing.
+    dir_list = dir_list([1:(ind_large-1), (ind_large+1):end]);
+end
 
 % Get image file type
 [~, ~, img_file_type] = fileparts(dir_list(1).name);
@@ -101,9 +112,11 @@ dir_list = dir_list([1:(ind_small-1), (ind_small+1):(ind_large-1), ...
 img_sets = struct;
 % Use Bioformats to Load in Image
 bf_reader_element = bfopen(dir_list(1).name);
-for i = 1:250 %%%% TEMPORARY TO SPEED UP PROCESSING.
-% for i = 1:(size(bf_reader_element,1)/2)
-    temp = bf_reader_element{(1+((i-1)*2)), 1};
+loader_bar = waitbar((1/size(bf_reader_element,1)), ...
+    'Loading sub-image sets.');
+for i = 1:size(bf_reader_element,1)
+    waitbar((i/size(bf_reader_element,1)), loader_bar);
+    temp = bf_reader_element{(1+(i-1)), 1};
     for j = 1:size(temp,1)
         img_sets(i).images{j} = double(temp{j,1});
     end
