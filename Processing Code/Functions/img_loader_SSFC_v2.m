@@ -1,5 +1,5 @@
 function [ img_sets, xml_name, env_name, img_file_type, xyz_map ] ...
-    = img_loader_SSFC_v2( file_path )
+    = img_loader_SSFC_v2( file_path, pos_file_path )
 %% Image Loader
 %   By: Niklas Gahm
 %   2018/07/23
@@ -25,22 +25,16 @@ dir_list = dir_list(3:end); % Removes system folders
 
 
 %% Handle/Load in Position File
-% Check if position file is in current directory 
-pos_file_flag = 0;
+% Check if position file is in current directory and remove from listing
 for i = 1:numel(dir_list)
     if strcmp('.xy', dir_list(i).name(end-2:end))
-        pos_file_path = [file_path '\' dir_list(i).name];
         dir_list = dir_list([1:i-1, i+1:end]);
-        pos_file_flag = 1;
         break;
     end
 end
 
 % Load in Position File Also handles the single position case
-xyz_map = [];
-if pos_file_flag == 1
-    xyz_map = SSFC_position_file_loader(pos_file_path);
-end
+xyz_map = SSFC_position_file_loader(pos_file_path);
 
 
 %% Account for .env file, .xml file, MIP folder, References Folder)
@@ -121,6 +115,7 @@ for i = 1:size(bf_reader_element,1)
         img_sets(i).images{j} = double(temp{j,1});
     end
 end
+close(loader_bar);
 
 % Remove reader element and the Java handles that falsely keep it open
 clear bf_reader_element;

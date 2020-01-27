@@ -1,6 +1,6 @@
 function [ ] = SSFC_Processing_Framework( proc_mode, spectral_binning, ...
         save_intermediaries_flag, img_save_type, bit_depth, file_path, ...
-        pixel_size, pos_file_path, cpath, num_line, wavelength_range )
+        pixel_size, pos_file_path, calibration_folder, num_line, wavelength_range )
 %% Spectrally-Split Swept Field Confocal Processing Framework
 %   By: Niklas Gahm
 %   2018/08/01
@@ -39,17 +39,18 @@ home_path = pwd;
 %% Load in Images
 fprintf('\nLoading Sub-Images\n');
 [ img_sets, xml_name, env_name, img_file_type, xyz_map ] = ...
-    img_loader_SSFC_v2( file_path );
+    img_loader_SSFC_v2( file_path, pos_file_path );
 
 
-%% Generate Calibration Map
+%% Calibration Spectra Map Constructor 
 fprintf('\nGenerating Calibration Map\n');
 [calibration_map, prism_angle, band_map, wavelength_range] = ...
-    SSFC_calibration_spectra_constructor_v2( ...
-    wavelength_range, calibration_path);
+    SSFC_calibration_spectra_constructor_v2( wavelength_range, ...
+    calibration_folder);
 
 
 %% Sub Image Straightener 
+fprintf('\nStraightening Sub Images\n');
 img_sets = SSFC_straightener_v4( img_sets, prism_angle );
 
 
