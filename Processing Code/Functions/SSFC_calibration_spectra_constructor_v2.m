@@ -103,7 +103,7 @@ num_line = zeros(1,size(calibration_set(strongest_line).image, 1));
 for i = 1:numel(num_line)
     [peaks,loc] = findpeaks( smooth( ...
         calibration_set(strongest_line).image(i,:)));
-    loc = loc(find(peaks >= (max(peaks)/2)));
+    loc = loc(find(peaks >= (max(peaks)/4)));
     num_line(i) = numel(loc);
 end
 

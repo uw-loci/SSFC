@@ -95,7 +95,7 @@ if exist(pos_file_path, 'file') == 2
         end
         % Find the end of the number and convert it to a double
         for i = 1:numel(temp)
-            if strcmp('"', temp(i))
+            if strcmp(',', temp(i))
                 xyz_map(index_counter).z_pos = str2double(temp(1:i-1));
                 break
             end

@@ -1,6 +1,7 @@
-function [ ] = SSFC_Processing_Framework( proc_mode, spectral_binning, ...
+function [ ] = SSFC_Processing_Framework( proc_mode, spectral_boundary, ...
         save_intermediaries_flag, img_save_type, bit_depth, file_path, ...
-        pixel_size, pos_file_path, calibration_folder, num_line, wavelength_range )
+        pixel_size, pos_file_path, calibration_folder, num_line, ...
+        wavelength_range )
 %% Spectrally-Split Swept Field Confocal Processing Framework
 %   By: Niklas Gahm
 %   2018/08/01
@@ -61,6 +62,11 @@ fprintf('\nConstructing Data Cubes\n');
     spectral_boundary );
 
 
+%% Assign Positional and Temporal Information 
+fprintf('\nAssigning Spatio Temporal Information to Data Cubes\n');
+[ img_sets ] = SSFC_spatiotemporal_assignment( img_sets, xyz_map);
+
+
 %% Save Individual Spectral Image Stacks
 if save_intermediaries_flag == 1
     fprintf('\nSaving Individual Spectral Stacks\n');
@@ -69,15 +75,14 @@ if save_intermediaries_flag == 1
 end
 
 
-% %% Tiling
-% img_cube = 0;
-% if strcmp(proc_mode, 'Image Stack') || strcmp(proc_mode, 'Video')
-%     fprintf('\nTiling Images\n');
-%     [img_cube] = SSFC_img_tiling(img_sets, xyz_map, overlap_percent, ...
-%         file_path, home_path);
-% end
-% 
-% 
+%% Tiling
+img_cube = 0;
+if strcmp(proc_mode, 'Image Stack') || strcmp(proc_mode, 'Video')
+    fprintf('\nTiling Images\n');
+    [img_cube] = SSFC_img_tiling(img_sets, xyz_map, pixel_size);
+end
+
+
 % %% Render False Color Images 
 % fprintf('\nRendering False Color Images\n');
 % [ img_cube_false, img_sets ] = SSFC_false_color_renderer( ...

@@ -69,7 +69,9 @@ end
 
 
 %% Separate Each Sub-Image Into the Binned Components 
+sub_img_waitbar = waitbar((1/numel(img_sets)), 'Constructing Data Cubes');
 for i = 1:numel(img_sets)
+    waitbar((i/numel(img_sets)), sub_img_waitbar);
     % Initialize Output Image
     img_sets(i).images_reconstructed = ...
         zeros(size(img_sets(i).images_straightened{1}, 1), ...
@@ -90,6 +92,7 @@ for i = 1:numel(img_sets)
     end
     
 end
+close(sub_img_waitbar);
 
 
 %% Clean Memory Usage
