@@ -129,7 +129,6 @@ pixel_size = str2double(get(handles.pixel_size, 'String'));
 
 spectral_binning = str2double(...
     regexp(get(handles.spectral_binning, 'String'), ',', 'split'));
-num_line = str2double(get(handles.num_line, 'String'));
 
 wavelength_range = [...
     str2double(get(handles.minimum_wavelength, 'String')), ...
@@ -159,7 +158,7 @@ else
     % Run Processing
     SSFC_Processing_Framework(proc_mode, spectral_binning, ...
         save_intermediaries_flag, img_save_type, bit_depth, fpath, ...
-        pixel_size, pos_file_path, cpath, num_line, wavelength_range);
+        pixel_size, pos_file_path, cpath, wavelength_range);
     % Close GUI
     closereq;
 end
@@ -440,7 +439,7 @@ save_intermediaries_flag_str_2 = 'NOTE: This will slow down your processing spee
 save_intermediaries_flag_str_full = sprintf('%s\n%s', ...
     save_intermediaries_flag_str_1, save_intermediaries_flag_str_2);
 set(handles.save_intermediaries_flag, 'TooltipString', ...
-    save_intermediaries_flag_str_full);
+    save_intermediaries_flag_str_full); 
 
 % Spectral Bin Size Tooltip
 spectral_binning_str_full = 'Select the wavelength boundaries between spectral bins.';

@@ -1,7 +1,6 @@
 function [ ] = SSFC_Processing_Framework( proc_mode, spectral_boundary, ...
         save_intermediaries_flag, img_save_type, bit_depth, file_path, ...
-        pixel_size, pos_file_path, calibration_folder, num_line, ...
-        wavelength_range )
+        pixel_size, pos_file_path, calibration_folder, wavelength_range )
 %% Spectrally-Split Swept Field Confocal Processing Framework
 %   By: Niklas Gahm
 %   2018/08/01
@@ -80,19 +79,24 @@ img_cube = 0;
 if strcmp(proc_mode, 'Image Stack') || strcmp(proc_mode, 'Video')
     fprintf('\nTiling Images\n');
     [img_cube] = SSFC_img_tiling(img_sets, xyz_map, pixel_size);
+    
+    
+%% Save Tiled Raw Data
+    fprintf('\nSaving Tiled Images\n');
+    SSFC_tiled_saver(img_cube, file_path, bit_depth);
 end
 
 
-% %% Render False Color Images 
-% fprintf('\nRendering False Color Images\n');
-% [ img_cube_false, img_sets ] = SSFC_false_color_renderer( ...
-%     img_cube, img_sets, proc_mode, wavelength_range );
-% 
-% 
-% %% Save Images
-% fprintf('\nSaving False Color Images\n');
-% SSFC_false_color_saver( img_cube_false, img_sets, proc_mode, file_path, ...
-%     bit_depth);
+%% Render False Color Images 
+fprintf('\nRendering False Color Images\n');
+[ img_cube_false, img_sets ] = SSFC_false_color_renderer( ...
+    img_cube, img_sets, proc_mode, wavelength_range );
+
+
+%% Save Images
+fprintf('\nSaving False Color Images\n');
+SSFC_false_color_saver( img_cube_false, img_sets, proc_mode, file_path, ...
+    bit_depth);
 
 %% Confirm Completion
 fprintf('\nProcessing Complete\n\n');

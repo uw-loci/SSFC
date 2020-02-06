@@ -1,6 +1,6 @@
 function SSFC_false_color_saver( img_cube_false, img_sets, proc_mode, ...
     fpath, bit_depth)
-%% SSFC False Color Renderer
+%% SSFC False Color Saver
 %   By: Niklas Gahm
 %   2018/12/05
 %
