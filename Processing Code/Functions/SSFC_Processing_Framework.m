@@ -98,8 +98,10 @@ fprintf('\nSaving False Color Images\n');
 SSFC_false_color_saver( img_cube_false, img_sets, proc_mode, file_path, ...
     bit_depth);
 
+
 %% Confirm Completion
 fprintf('\nProcessing Complete\n\n');
+
 
 %% Return to Starting Point
 cd(home_path);

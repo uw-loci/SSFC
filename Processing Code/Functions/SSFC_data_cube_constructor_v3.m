@@ -1,5 +1,6 @@
 function [ img_sets ] = SSFC_data_cube_constructor_v3( ...
-    img_sets, calibration_map, wavelength_range, band_map, spectral_boundary )
+    img_sets, calibration_map, wavelength_range, band_map, ...
+    spectral_boundary )
 %% SSFC Data Cube Constructor
 %   By: Niklas Gahm
 %   2018/11/26
@@ -26,20 +27,36 @@ bin_masks = zeros(size(calibration_map, 1), size(calibration_map, 2), ...
     numel(spectral_boundary) + 1);
 
 % Setup bin bounds
-if wavelength_range(1) < wavelength_range(2)
-    bin_bounds = [wavelength_range(1), sort(spectral_boundary), ...
-        wavelength_range(2)];
-else
-    wavelength_range = flip(wavelength_range);
-    bin_bounds = [wavelength_range(1), sort(spectral_boundary, ...
-        'descend'), wavelength_range(2)];
+bin_bounds = sort([wavelength_range, spectral_boundary], 'ascend');
+wavelength_range = sort(wavelength_range, 'ascend');
+
+% Check if any spectral bounds are outside of the wavelength range
+lower_ind = 1;
+upper_ind = numel(bin_bounds);
+for i = 1:numel(bin_bounds)
+    if wavelength_range(1) == bin_bounds(i) && i ~= 1
+        % Need to chop lower range
+        lower_ind = i;
+        warning(['Lower spectral bins were under the lower ' ...
+            'wavelength range bound. Bins below ' ...
+            num2str(wavelength_range(1)) 'nm have been removed.']);
+        
+    elseif wavelength_range(2) == bin_bounds(i) && i ~= numel(bin_bounds)
+        % Need to chop upper range
+        upper_ind = i;
+        warning(['Upper spectral bins were over the upper ' ...
+            'wavelength range bound. Bins over ' ...
+            num2str(wavelength_range(2)) 'nm have been removed.']);
+        break; % No need to keep searching the sorted array.
+    end
 end
+bin_bounds = bin_bounds(lower_ind:upper_ind);
 
 % Remove the last bound since it is superfluous for the processing
 bin_bounds = bin_bounds(1:(end-1));
 
 % Sequentially convert calibration map into bin masks
-for i = 1:(numel(spectral_boundary) + 1)
+for i = 1:numel(bin_bounds)
     temp = calibration_map; 
     temp(temp < bin_bounds(end-(i-1))) = 0;
     temp(temp > 0) = 1;
@@ -75,12 +92,11 @@ for i = 1:numel(img_sets)
     % Initialize Output Image
     img_sets(i).images_reconstructed = ...
         zeros(size(img_sets(i).images_straightened{1}, 1), ...
-        size(img_sets(i).images_straightened{1}, 2), 1, ...
-        (numel(spectral_boundary) + 1));
+        size(img_sets(i).images_straightened{1}, 2), 1, numel(bin_bounds));
     
     % Process Each Sub-Image
     for j = 1:numel(img_sets(i).images_straightened)
-        for k = 1:(numel(spectral_boundary) + 1)
+        for k = 1:numel(bin_bounds)
             temp = img_sets(i).images_straightened{j} .* bin_masks(:,:,k);
             for m = 1:num_bands
                 temp_2 = temp .* band_masks(:,:,m);

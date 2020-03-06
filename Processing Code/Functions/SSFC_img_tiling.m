@@ -26,7 +26,7 @@ unique_z = [];
 for i = 1:num_pos
     unique_x_flag = 1;
     for j = 1:numel(unique_x)
-        if xyz_map(i).x_pos == unique_x{j}
+        if xyz_map(i).x_pos == unique_x(j)
             unique_x_flag = 0;
         end
     end
@@ -36,7 +36,7 @@ for i = 1:num_pos
     
     unique_y_flag = 1;
     for j = 1:numel(unique_y)
-        if xyz_map(i).y_pos == unique_y{j}
+        if xyz_map(i).y_pos == unique_y(j)
             unique_y_flag = 0;
         end
     end
@@ -46,7 +46,7 @@ for i = 1:num_pos
     
     unique_z_flag = 1;
     for j = 1:numel(unique_z)
-        if xyz_map(i).z_pos == unique_z{j}
+        if xyz_map(i).z_pos == unique_z(j)
             unique_z_flag = 0;
         end
     end
