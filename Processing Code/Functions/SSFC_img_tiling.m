@@ -130,9 +130,8 @@ for t = 1:num_t
     % Z is easy to fill since due to the nature of this microscopy modality
     % there is no true overlap between Z-planes which would require being
     % accounted for and corrected by feathering
+    mosaic = [];
     for z = 1:num_z
-        mosaic = [];
-        
         
         % Tiling in X
         x_tiled = cell(1, num_y);
