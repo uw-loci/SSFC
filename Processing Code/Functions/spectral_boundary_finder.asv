@@ -1,4 +1,5 @@
-function [spectral_boundary] = spectral_boundary_finder(img_sets)
+function [spectral_boundary] = spectral_boundary_finder(...
+    img_sets, calibration_map, spectral_finding_granularity)
 %% SSFC Data Cube Constructor
 %   By: Niklas Gahm
 %   2020/04/23
@@ -10,6 +11,7 @@ function [spectral_boundary] = spectral_boundary_finder(img_sets)
 %
 %   2020/04/23 - Started
 %   2020/04/28 - Finished
+
 
 
 
@@ -27,6 +29,12 @@ close(sub_img_waitbar);
 
 
 %% Build Wavelength Counts
+% Convert matrices into a vector.
+intensities = intensities(:);
+wavelengths = calibration_map(:);
+[wavelengths, sorted_ind] = sort(wavelengths, 'ascending');
+intensities = intensities(sorted_ind);
+wavelengths = fix(wavelengths * 10^spectral_finding_granularity));
 
 
 %% Determine Boundaries

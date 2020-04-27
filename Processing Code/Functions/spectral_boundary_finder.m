@@ -34,6 +34,8 @@ intensities = intensities(:);
 wavelengths = calibration_map(:);
 [wavelengths, sorted_ind] = sort(wavelengths, 'ascending');
 intensities = intensities(sorted_ind);
+wavelengths = fix(wavelengths * (10^spectral_finding_granularity)) / ...
+    (10^spectral_finding_granularity);
 
 
 %% Determine Boundaries
