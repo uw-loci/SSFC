@@ -18,7 +18,6 @@ function [ ] = SSFC_Processing_Framework( proc_mode, spectral_boundary, ...
 
 %% Setup the Workspace
 format longe; 
-spectral_finding_granularity = 1;
 
 
 %% Calculated Variables
@@ -55,11 +54,7 @@ fprintf('\nStraightening Sub Images\n');
 img_sets = SSFC_straightener_v4( img_sets, prism_angle );
 
 
-%% Spectral Boundary Finding
-fprintf('\nFinding Spectral Bounds\n');
-spectral_boundary = spectral_boundary_finder(img_sets, calibration_map, ...
-    spectral_finding_granularity);
-
+%% Spectral
 
 %% Reconstruct  
 fprintf('\nConstructing Data Cubes\n');
