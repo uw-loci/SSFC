@@ -127,9 +127,6 @@ end
 
 pixel_size = str2double(get(handles.pixel_size, 'String'));
 
-spectral_binning = str2double(...
-    regexp(get(handles.spectral_binning, 'String'), ',', 'split'));
-
 wavelength_range = [...
     str2double(get(handles.minimum_wavelength, 'String')), ...
     str2double(get(handles.maximum_wavelength, 'String'))];
@@ -156,7 +153,7 @@ elseif calibration_set_flag == 0
     uiwait(msgbox('Please Select a Valid Folder of Calibration Files.'));
 else
     % Run Processing
-    SSFC_Processing_Framework(proc_mode, spectral_binning, ...
+    SSFC_Processing_Framework(proc_mode, ...
         save_intermediaries_flag, img_save_type, bit_depth, fpath, ...
         pixel_size, pos_file_path, cpath, wavelength_range);
     % Close GUI
@@ -440,11 +437,6 @@ save_intermediaries_flag_str_full = sprintf('%s\n%s', ...
     save_intermediaries_flag_str_1, save_intermediaries_flag_str_2);
 set(handles.save_intermediaries_flag, 'TooltipString', ...
     save_intermediaries_flag_str_full); 
-
-% Spectral Bin Size Tooltip
-spectral_binning_str_full = 'Select the wavelength boundaries between spectral bins.';
-set(handles.text8, 'TooltipString', spectral_binning_str_full);
-set(handles.spectral_binning, 'TooltipString', spectral_binning_str_full);
 
 % Bit Depth Tooltip
 bit_depth_str_full = 'Select the Bit Depth output images should contain.';
