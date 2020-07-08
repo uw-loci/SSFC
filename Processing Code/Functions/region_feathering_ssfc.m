@@ -27,7 +27,8 @@ if size(mosaic_side, 1) ~= size(tile_side, 1) || ...
         size(mosaic_side, 2) ~= size(tile_side, 2) || ...
         size(mosaic_side, 3) ~= size(tile_side, 3) || ...
         size(mosaic_side, 4) ~= size(tile_side, 4)
-    error('\nInput Mosaic Region and Input Tile Region need \n');
+    error(['Input Mosaic Region and Input Tile Region need to be ' ...
+        'the same size.']);
 end
 
 
@@ -45,7 +46,7 @@ switch feathering_dim
         for i = 1:size(mosaic_side,4)
             feathered_region(:,:,:,i) = (mosaic_side(:,:,:,i) .* ...
                 fliplr(feathering_gradient)) ...
-                + (tile_side(:,:,:,i) .* feathering_dim);
+                + (tile_side(:,:,:,i) .* feathering_gradient);
         end
         
     % X Ascending (Mosaic on the left, Tile on the right)
@@ -55,7 +56,7 @@ switch feathering_dim
         for i = 1:size(mosaic_side,4)
             feathered_region(:,:,:,i) = (mosaic_side(:,:,:,i) .* ...
                 feathering_gradient) + (tile_side(:,:,:,i) .* ...
-                fliplr(feathering_dim));
+                fliplr(feathering_gradient));
         end
         
     % Y Descending (Tile on bottom, Mosaic on top) 

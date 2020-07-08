@@ -1,6 +1,7 @@
 function [ calibration_space, prism_angle, band_map, wavelength_range ] ...
     = SSFC_calibration_spectra_constructor_v2( ...
-    wavelength_range, calibration_folder )
+    wavelength_range, calibration_folder, ...
+    automated_line_detection_flag, num_bands )
 %% SSFC Calibration Spectra Constructor
 %   By: Niklas Gahm
 %   2019/05/17
@@ -13,6 +14,14 @@ function [ calibration_space, prism_angle, band_map, wavelength_range ] ...
 %   2019/05/17 - Started
 %   2019/05/19 - Finished
 
+
+
+
+%% Setup Input Handling
+if nargin == 2
+    automated_line_detection_flag = 1;
+    num_bands = 0;
+end
 
 
 
@@ -97,19 +106,21 @@ end
 % Determine the strongest line to use for this step
 [~, strongest_line] = max(img_intensities);
 
-% Go through and determine the number of lines in each row
-num_line = zeros(1,size(calibration_set(strongest_line).image, 1));
-% avg_dist_btw_lines = num_line;
-for i = 1:numel(num_line)
-    [peaks,loc] = findpeaks( smooth( ...
-        calibration_set(strongest_line).image(i,:)));
-    loc = loc(find(peaks >= (max(peaks)/4)));
-    num_line(i) = numel(loc);
+if automated_line_detection_flag == 1
+    % Go through and determine the number of lines in each row
+    num_line = zeros(1,size(calibration_set(strongest_line).image, 1));
+    % avg_dist_btw_lines = num_line;
+    for i = 1:numel(num_line)
+        [peaks,loc] = findpeaks( smooth( ...
+            calibration_set(strongest_line).image(i,:)));
+        loc = loc(find(peaks >= (max(peaks)/6)));
+        num_line(i) = numel(loc);
+    end
+    
+    % The number of actual lines is the mode of how many lines were found 
+    % in each row.
+    num_bands = mode(num_line);
 end
-
-% The number of actual lines is the mode of how many lines were found in
-% each row.
-num_bands = mode(num_line); 
 
 
 
@@ -214,9 +225,9 @@ wavelengths = [wavelength_range(1), wavelengths, wavelength_range(2)];
 
 % Adjust the average starting offset to reflect the start of the range
 if offset_range(2) < offset_range(1)
-    avg_starting_offset = avg_starting_offset - abs(offset_range(2));
+    avg_starting_offset = abs(avg_starting_offset - abs(offset_range(2)));
 else
-    avg_starting_offset = avg_starting_offset - abs(offset_range(1));
+    avg_starting_offset = abs(avg_starting_offset - abs(offset_range(1)));
 end
 
 % Adjust the offsets such that the lowest wavelength sits at pixel 1 of the

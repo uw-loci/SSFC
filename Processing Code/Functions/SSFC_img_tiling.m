@@ -1,4 +1,5 @@
-function [img_cube] = SSFC_img_tiling(img_sets, xyz_map, pixel_size)
+function [ img_cube ] = SSFC_img_tiling( ...
+    img_sets, xyz_map, pixel_size, band_map )
 %% SSFC Image Tiler
 %   By: Niklas Gahm
 %   2018/11/26
@@ -58,19 +59,41 @@ num_x = numel(unique_x);
 num_y = numel(unique_y);
 num_z = numel(unique_z);
 
-% Sort Unique Positions
+% Determine Direction and Sort Unique Positions
+x_direction = '+X';
+if sum(unique_x(2:end) - unique_x(1:(end-1))) < 0
+    x_direction = '-X';
+end
+    
 unique_x_sorted = sort(unique_x);
 unique_y_sorted = sort(unique_y);
 unique_z_sorted = sort(unique_z);
 
 
 
-%% Calculate Pixel Offsets and Direction
-% All offsets are inherently positive due to sorting 
-x_offset = mean(unique_x_sorted(2:end) - unique_x_sorted(1:(end-1))) ...
-    / pixel_size;
-y_offset = mean(unique_y_sorted(2:end) - unique_y_sorted(1:(end-1))) ...
-    / pixel_size;
+%% Determine 0 Padded Region in the X Dimension
+pad_start = 0;
+pad_end = 0;
+for i = 2:size(band_map,2)
+    if (band_map(floor(size(band_map,1)/2), (i-1)) == 0) ...
+            && (band_map(floor(size(band_map,1)/2), i) == 1)
+        pad_start = i-1;
+        
+    elseif (band_map(floor(size(band_map,1)/2), (i-1)) == ...
+            max(max(band_map))) ...
+            && (band_map(floor(size(band_map,1)/2), i) == 0)
+        pad_end = i;
+        
+    end
+end
+
+
+
+%% Calculate Pixel Offsets 
+x_offset = abs(mean(unique_x_sorted(2:end) - unique_x_sorted(1:(end-1)))...
+    / pixel_size) - abs(pad_start + (size(band_map,2) - pad_end));
+y_offset = abs(mean(unique_y_sorted(2:end) - unique_y_sorted(1:(end-1)))...
+    / pixel_size);
 
 
 
@@ -118,7 +141,8 @@ for t = 1:num_t
         
         % Place Tile Data in Slot
         cube_tiles_ordered{ind(1), ind(2), ind(3)} = ...
-            cube_tiles(i).images_reconstructed;
+            cube_tiles(i).images_reconstructed( :, ...
+            (pad_start+1):(pad_end-1), :, : );
     end
     
     % Clean up Cube Tiles for Memory Purposes
@@ -137,57 +161,119 @@ for t = 1:num_t
         x_tiled = cell(1, num_y);
         for y = 1:num_y
             x_growth = cube_tiles_ordered{1, y, z};
-            for x = 2:num_x
-                x_tile = cube_tiles_ordered{x, y, z};
-                % Offset is generally not pixel perfect and therefore must
-                % be corrected for
-                if (x_offset/round(x_offset)) ~= 1
-                    % Conceptually this is effectively taking an
-                    % interpolation of the tile away from the growth
-                    % position, and then removing the last column of pixels
-                    % since they are interpolated into nothing.
-                    
-                    shift_factor = x_offset - floor(x_offset);
-                    ref_cord_x = repmat(linspace(1, size(x_tile,2), ...
-                        size(x_tile,2)), size(x_tile,1), 1);
-                    ref_cord_y = repmat(linspace(1, size(x_tile,1), ...
-                        size(x_tile,1))', 1, size(x_tile,2));
-                    
-                    interp_cord_x = ref_cord_x + shift_factor; 
-                    
-                    for i = 1:size(x_tile, 4)
-                        x_tile(:,:,:,i) = interp2(...
-                            ref_cord_x, ref_cord_y, x_tile(:,:,:,i), ...
-                            interp_cord_x, ref_cord_y);
+            if strcmp('+X', x_direction)
+                for x = 2:num_x
+                    x_tile = cube_tiles_ordered{x, y, z};
+                    % Offset is generally not pixel perfect and therefore 
+                    % must be corrected for
+                    if (x_offset/round(x_offset)) ~= 1
+                        % Conceptually this is effectively taking an
+                        % interpolation of the tile away from the growth
+                        % position, and then removing the last column of 
+                        % pixels since they are interpolated into nothing.
+                        
+                        shift_factor = x_offset - floor(x_offset);
+                        ref_cord_x = repmat(linspace(1, size(x_tile,2), ...
+                            size(x_tile,2)), size(x_tile,1), 1);
+                        ref_cord_y = repmat(linspace(1, size(x_tile,1), ...
+                            size(x_tile,1))', 1, size(x_tile,2));
+                        
+                        interp_cord_x = ref_cord_x + shift_factor;
+                        
+                        for i = 1:size(x_tile, 4)
+                            x_tile(:,:,:,i) = interp2(...
+                                ref_cord_x, ref_cord_y, ...
+                                x_tile(:,:,:,i), ...
+                                interp_cord_x, ref_cord_y);
+                        end
+                        
+                        x_tile = x_tile(:, 1:(end-1), :, :);
+                        
+                        % So the region of overlap will appear smaller than
+                        % prior to this transformation
+                        tile_bound = size(x_tile, 2) - floor(x_offset);
+                        growth_bound = size(x_growth,2) - tile_bound;
+                        
+                        % In the off case that it is pixel perfect
+                    else
+                        tile_bound = size(x_tile, 2) - x_offset;
+                        growth_bound = size(x_growth,2) - tile_bound;
                     end
                     
-                    x_tile = x_tile(:, 1:(end-1), :, :);
+                    % Generate the row components
+                    growth_part = x_growth(:, 1:growth_bound, :, :);
+                    feathered_part = region_feathering_ssfc( ...
+                        x_growth(:, (growth_bound+1):end, :, :), ...
+                        x_tile(:, 1:tile_bound, :, :), x_direction);
+                    tile_part = x_tile(:, (tile_bound+1):end, :, :);
                     
-                    % So the region of overlap will appear smaller than
-                    % prior to this transformation
-                    growth_bound = size(x_growth, 2) - floor(x_offset);
-                    tile_bound = floor(x_offset) + 1;
+                    % Combine components into new x_growth
+                    x_growth = [growth_part, feathered_part, tile_part];
                     
-                % In the off case that it is pixel perfect 
-                else
-                    growth_bound = size(x_growth, 2) - x_offset;
-                    tile_bound = x_offset + 1;
                 end
                 
-                % Generate the row components
-                growth_part = x_growth(:, 1:growth_bound, :, :);
-                feathered_part = region_feathering_ssfc( ...
-                    x_growth(:, (growth_bound+1):end, :, :), ...
-                    x_tile(:, 1:tile_bound, :, :), '+X'); 
-                tile_part = x_tile(:, (tile_bound+1):end, :, :);
+                % Add tiled x-row to cell vector for usage in 
+                % the y-dimension
+                x_tiled{y} = x_growth;
                 
-                % Combine components into new x_growth
-                x_growth = [growth_part, feathered_part, tile_part];
                 
+            else
+                % The case where tiles are added on the image left
+                for x = 2:num_x
+                    x_tile = cube_tiles_ordered{x, y, z};
+                    % Offset is generally not pixel perfect and therefore 
+                    % must be corrected for
+                    if (x_offset/round(x_offset)) ~= 1
+                        % Conceptually this is effectively taking an
+                        % interpolation of the tile away from the growth
+                        % position, and then removing the last column of 
+                        % pixels since they are interpolated into nothing.
+                        
+                        shift_factor = x_offset - floor(x_offset);
+                        ref_cord_x = repmat(linspace(1, size(x_tile,2), ...
+                            size(x_tile,2)), size(x_tile,1), 1);
+                        ref_cord_y = repmat(linspace(1, size(x_tile,1), ...
+                            size(x_tile,1))', 1, size(x_tile,2));
+                        
+                        interp_cord_x = ref_cord_x + shift_factor;
+                        
+                        for i = 1:size(x_tile, 4)
+                            x_tile(:,:,:,i) = interp2(...
+                                ref_cord_x, ref_cord_y, ...
+                                x_tile(:,:,:,i), ...
+                                interp_cord_x, ref_cord_y);
+                        end
+                        
+                        x_tile = x_tile(:, 1:(end-1), :, :);
+                        
+                        % So the region of overlap will appear smaller than
+                        % prior to this transformation
+                        growth_bound = size(x_tile, 2) - floor(x_offset);
+                        tile_bound = floor(x_offset);
+                        
+                        % In the off case that it is pixel perfect
+                    else
+                        growth_bound = size(x_tile, 2) - x_offset;
+                        tile_bound = x_offset;
+                    end
+                    
+                    % Generate the row components
+                    growth_part = x_growth(:, growth_bound:end, :, :);
+                    feathered_part = region_feathering_ssfc( ...
+                        x_tile(:, tile_bound:end, :, :), ...
+                        x_growth(:, 1:(growth_bound+1), :, :), ...
+                        x_direction);
+                    tile_part = x_tile(:, 1:(tile_bound-1), :, :);
+                    
+                    % Combine components into new x_growth
+                    x_growth = [tile_part, feathered_part, growth_part];
+                    
+                end
+                
+                % Add tiled x-row to cell vector for usage in 
+                % the y-dimension
+                x_tiled{y} = x_growth;
             end
-            
-            % Add tiled x-row to cell vector for usage in the y-dimension
-            x_tiled{y} = x_growth;
         end
         
         
@@ -205,10 +291,10 @@ for t = 1:num_t
                 % information that is not present.
                 
                 shift_factor = y_offset - floor(y_offset);
-                ref_cord_x = repmat(linspace(1, size(xy_growth,2), ...
-                    size(xy_growth,2)), size(xy_growth,1), 1);
-                ref_cord_y = repmat(linspace(1, size(xy_growth,1), ...
-                    size(xy_growth,1))', 1, size(xy_growth,2));
+                ref_cord_x = repmat(linspace(1, size(xy_tile,2), ...
+                    size(xy_tile,2)), size(xy_tile,1), 1);
+                ref_cord_y = repmat(linspace(1, size(xy_tile,1), ...
+                    size(xy_tile,1))', 1, size(xy_tile,2));
                 
                 interp_cord_y = ref_cord_y + shift_factor;
                 
@@ -221,15 +307,14 @@ for t = 1:num_t
                 xy_tile = xy_tile(1:(end-1), :, :, :);
                 
                 % So the region of overlap will appear smaller than
-                % prior to this transformation
-                growth_bound = size(xy_growth, 2) - floor(y_offset);
-                tile_bound = floor(y_offset) + 1;
-                
+                % prior to this transformation 
+                tile_bound = size(xy_tile,1) - floor(y_offset);
+                growth_bound = size(xy_growth, 1) - tile_bound;
                 
                 % In the off case that the offset is pixel perfect
             else
-                growth_bound = size(xy_growth,1) - y_offset;
-                tile_bound = y_offset + 1;
+                tile_bound = size(xy_tile,1) - y_offset;
+                growth_bound = size(xy_growth, 1) - tile_bound;
             end
             
             % Generate the xy components

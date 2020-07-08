@@ -16,13 +16,13 @@ function [spectral_boundary] = spectral_boundary_finder(...
 
 
 %% Build Superposition Intensity Vector
-intensities = 0*img_sets(1).images_straightened(1);
+intensities = 0*img_sets(1).images_straightened{1};
 sub_img_waitbar = waitbar((1/numel(img_sets)), ...
     'Generating Intensity Vector.');
 for i = 1:numel(img_sets)
     waitbar((i/numel(img_sets)), sub_img_waitbar);
     for j = 1:numel(img_sets(i).images_straightened)
-        intensities = intesnsities + img_sets(i).images_straightened(j);
+        intensities = intensities + img_sets(i).images_straightened{j};
     end
 end
 close(sub_img_waitbar);
@@ -32,13 +32,13 @@ close(sub_img_waitbar);
 % Convert matrices into a vector.
 intensities = intensities(:);
 wavelengths = calibration_map(:);
-[wavelengths, sorted_ind] = sort(wavelengths, 'ascending');
+[wavelengths, sorted_ind] = sort(wavelengths, 'ascend');
 intensities = intensities(sorted_ind);
 
 
 %% Compress Vectors by Granularity 
-wavelengths = fix(wavelengths * (10^spectral_finding_granularity)) / ...
-    (10^spectral_finding_granularity);
+wavelengths = fix(wavelengths / spectral_finding_granularity) * ...
+    spectral_finding_granularity;
 
 wavelengths_comp = wavelengths * 0;
 wavelengths_comp(1) = wavelengths(1);
@@ -58,8 +58,8 @@ for i = 2:numel(wavelengths)
     end
 end
 
-wavelengths_comp = wavelengths_comp(1:current_ind);
-intensities_comp = intensities_comp(1:current_ind);
+wavelengths_comp = wavelengths_comp(2:current_ind);
+intensities_comp = intensities_comp(2:current_ind);
 
 
 %% Determine Boundaries
@@ -127,7 +127,7 @@ end
 min_intensities_loc = min_intensities_loc(find(min_logical));
 
 % Generate Spectral Boundary Vector from the minimums
-spectral_boundary = wavelengths_comp(min_intensities_loc);
+spectral_boundary = wavelengths_comp(min_intensities_loc)';
 
 
 %% Print Spectral Bounds to Console

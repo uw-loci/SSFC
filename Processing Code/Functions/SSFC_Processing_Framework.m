@@ -18,7 +18,9 @@ function [ ] = SSFC_Processing_Framework( proc_mode, ...
 
 %% Setup the Workspace
 format longe; 
-spectral_finding_granularity = 1;
+spectral_finding_granularity = 10.5;
+automated_line_detection_flag = 0;
+num_bands = 32;
 
 
 %% Calculated Variables
@@ -47,7 +49,7 @@ fprintf('\nLoading Sub-Images\n');
 fprintf('\nGenerating Calibration Map\n');
 [calibration_map, prism_angle, band_map, wavelength_range] = ...
     SSFC_calibration_spectra_constructor_v2( wavelength_range, ...
-    calibration_folder);
+    calibration_folder, automated_line_detection_flag, num_bands);
 
 
 %% Sub Image Straightener 
@@ -85,7 +87,7 @@ end
 img_cube = 0;
 if strcmp(proc_mode, 'Image Stack') || strcmp(proc_mode, 'Video')
     fprintf('\nTiling Images\n');
-    [img_cube] = SSFC_img_tiling(img_sets, xyz_map, pixel_size);
+    [img_cube] = SSFC_img_tiling(img_sets, xyz_map, pixel_size, band_map);
     
     
 %% Save Tiled Raw Data
