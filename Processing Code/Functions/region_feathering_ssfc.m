@@ -40,7 +40,7 @@ feathered_region = zeros(size(mosaic_side,1), size(mosaic_side,2), ...
 
 switch feathering_dim
     % X Descending (Tile on the left, Mosaic on the Right)
-    case '-X'
+    case '+X'
         feathering_gradient = repmat(linspace(0,1,size(mosaic_side,2)), ...
             size(mosaic_side,1), 1, size(mosaic_side,3));
         for i = 1:size(mosaic_side,4)
@@ -50,7 +50,7 @@ switch feathering_dim
         end
         
     % X Ascending (Mosaic on the left, Tile on the right)
-    case '+X'
+    case '-X'
         feathering_gradient = repmat(linspace(0,1,size(mosaic_side,2)), ...
             size(mosaic_side,1), 1, size(mosaic_side,3));
         for i = 1:size(mosaic_side,4)

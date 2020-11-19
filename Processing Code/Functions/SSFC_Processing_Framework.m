@@ -9,18 +9,26 @@ function [ ] = SSFC_Processing_Framework( proc_mode, ...
 %   reconstructed for a spectrally-split swept field confocal system.
 % 
 %   2018/08/01 - Started 
+%   2020/11/02 - Updated for Basic TXYZ Data Handling
 % 
 %   To-Do:
-%       - Enable 3D video processing. 
+%       - Potentially add a splitting mode for TXYZ data
 
 
 
 
 %% Setup the Workspace
 format longe; 
-spectral_finding_granularity = 10.5;
+
+automated_spectral_finding_flag = 0;
+spectral_finding_granularity = 10;
+% spectral_boundary = [490,570];
+spectral_boundary = [500, 580];
+
 automated_line_detection_flag = 0;
 num_bands = 32;
+
+data_order = 'TXYZ'; % Supports 'XYZT and TXYZ' Default is 'XYZT'
 
 
 %% Calculated Variables
@@ -58,9 +66,11 @@ img_sets = SSFC_straightener_v4( img_sets, prism_angle );
 
 
 %% Spectral Boundary Finding
-fprintf('\nFinding Spectral Bounds\n');
-spectral_boundary = spectral_boundary_finder(img_sets, calibration_map, ...
-    spectral_finding_granularity);
+if automated_spectral_finding_flag == 1
+    fprintf('\nFinding Spectral Bounds\n');
+    spectral_boundary = spectral_boundary_finder(img_sets, ...
+        calibration_map, spectral_finding_granularity);
+end
 
 
 %% Reconstruct  
@@ -72,7 +82,8 @@ fprintf('\nConstructing Data Cubes\n');
 
 %% Assign Positional and Temporal Information 
 fprintf('\nAssigning Spatio Temporal Information to Data Cubes\n');
-[ img_sets ] = SSFC_spatiotemporal_assignment( img_sets, xyz_map);
+[ img_sets ] = SSFC_spatiotemporal_assignment( img_sets, xyz_map, ...
+    data_order);
 
 
 %% Save Individual Spectral Image Stacks
@@ -87,7 +98,8 @@ end
 img_cube = 0;
 if strcmp(proc_mode, 'Image Stack') || strcmp(proc_mode, 'Video')
     fprintf('\nTiling Images\n');
-    [img_cube] = SSFC_img_tiling(img_sets, xyz_map, pixel_size, band_map);
+    [img_cube] = SSFC_img_tiling(img_sets, xyz_map, pixel_size, ...
+        band_map, data_order);
     
     
 %% Save Tiled Raw Data
@@ -115,4 +127,3 @@ fprintf('\nProcessing Complete\n\n');
 %% Return to Starting Point
 cd(home_path);
 end
-
