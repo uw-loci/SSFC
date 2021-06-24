@@ -78,7 +78,6 @@ end
 %% Sort Folder Appropriately
 fprintf('\nCopying Files, This may take a while.\n');
 movefile('*', 'Unprocessed Data');
-fprintf('\nCopying Files, This may take a while.\n');
 copyfile('Unprocessed Data', 'Processed Data');
 file_path = [arch_path '\Processed Data'];
 

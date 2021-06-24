@@ -108,42 +108,43 @@ end
 
 if automated_line_detection_flag == 1
     % Go through and determine the number of lines in each row
-    num_line = zeros(1,size(calibration_set(strongest_line).image, 1));
+    img_dim_1_lines = ...
+        zeros(1,size(calibration_set(strongest_line).image, 1));
     % avg_dist_btw_lines = num_line;
-    for i = 1:numel(num_line)
+    for i = 1:numel(img_dim_1_lines)
         [peaks,loc] = findpeaks( smooth( ...
             calibration_set(strongest_line).image(i,:)));
-        loc = loc(find(peaks >= (max(peaks)/6)));
-        num_line(i) = numel(loc);
+        loc = loc(find(peaks >= (max(peaks)/3)));
+        img_dim_1_lines(i) = numel(loc);
     end
     
     % The number of actual lines is the mode of how many lines were found 
     % in each row.
-    num_bands = mode(num_line);
+    num_bands = mode(img_dim_1_lines);
 end
 
 
 
 %% Determine True Distance Between Bands
 % Initialize Search
-num_line = size(calibration_set(strongest_line).image, 1);
-avg_dist_btw_bands = zeros(1,num_line);
-avg_starting_offset = zeros(1,num_line);
+img_dim_1 = size(calibration_set(strongest_line).image, 1);
+avg_dist_btw_bands = zeros(1,img_dim_1);
+avg_starting_offset = zeros(1,img_dim_1);
 
 % Go through and determine the number of lines in each row
-for i = 1:num_line
+for i = 1:img_dim_1
     
     % Generate the Reference Line
     [peaks,loc_ref] = findpeaks( smooth( ...
         calibration_set(strongest_line).image(i,:)));
     [~, ind] = maxk( peaks, num_bands);
-    loc_ref = loc_ref(sort(ind));
+    loc_ref_line = loc_ref(sort(ind));
     
     % Calculate the Between Band Distance
-    avg_dist_btw_bands(i) = mean(loc_ref(2:end)-loc_ref(1:end-1));
+    avg_dist_btw_bands(i) = mean(loc_ref_line(2:end)-loc_ref_line(1:end-1));
     
     % Store the first peak location
-    avg_starting_offset(i) = loc_ref(1);
+    avg_starting_offset(i) = loc_ref_line(1);
 end
 
 % Get the average distance between band peaks.
@@ -154,7 +155,7 @@ avg_starting_offset = mean(avg_starting_offset);
 
 
 
-%% Determine True Distance Between Lines 
+%% Determine True Distance Between Wavelength Lines 
 % Remove the Strongest Line from the Search since it is Reference
 search_ind = 1:1:num_ref;
 search_ind(strongest_line) = [];
@@ -235,48 +236,31 @@ end
 offsets = [offset_range(1), offsets, offset_range(2)] - offset_range(1);
 
 % Generate Positional Offsets
-positional_offsets = mod( (avg_starting_offset - ...
-    fix(avg_starting_offset)):1:ceil(avg_dist_btw_bands * num_bands), ...
-    avg_dist_btw_bands);
+positional_offsets = SSFC_calibration_positional_offset_generator( ...
+    loc_ref, avg_dist_btw_bands, avg_starting_offset, calibration_set, ...
+    offsets, strongest_line);
 
 % Generate Band Map Spacing
-band_map = ones(1, numel(positional_offsets));
-counter = 1;
+band_map = zeros(1, numel(positional_offsets));
+counter = 0;
 for i = 2:numel(positional_offsets)
-    if positional_offsets(i) < positional_offsets(i-1)
-        counter = counter + 1;
+    if positional_offsets(i) ~= (avg_dist_btw_bands^2)
+        if (positional_offsets(i) < positional_offsets(i-1))
+            counter = counter + 1;
+        end
+        band_map(i) = counter;
     end
-    band_map(i) = counter;
-end
-
-% Pad the start to match the dark region of the rotated calibration images
-pad_count = fix(avg_starting_offset);
-% By padding with a value larger than the acceptable offset range, it will
-% be zeroed during interpolation
-pad_vector = ones(1,pad_count) * (avg_dist_btw_bands + 10);
-spectral_band = [pad_vector, positional_offsets];
-band_map = [(pad_vector.*0), band_map];
-
-% Pad the back to match the rotated image size
-if numel(spectral_band) < size(calibration_set(1).image_rot,2)
-    pad_count = size(calibration_set(1).image_rot,2) ...
-        - numel(spectral_band);
-    % By padding with a value larger than the acceptable offset range, it
-    % will be zeroed during interpolation
-    pad_vector = ones(1,pad_count) * (avg_dist_btw_bands + 10);
-    spectral_band = [spectral_band, pad_vector];
-    band_map = [band_map, (pad_vector .* 0)];
 end
 
 % Interpolate to convert to spectral values
-spectral_band = interp1(offsets, wavelengths, spectral_band, ...
+spectral_band = interp1(offsets, wavelengths, positional_offsets, ...
     'linear', 0);
 
 
 %% Generate Calibration Space for the rotated sub-image approach
 calibration_space = repmat(spectral_band, ...
-    [size(calibration_set(1).image_rot,1), 1]);
-band_map = repmat(band_map, [size(calibration_set(1).image_rot,1), 1]);
+    [size(calibration_set(1).image_rot,2), 1]);
+band_map = repmat(band_map, [size(calibration_set(1).image_rot,2), 1]);
 
 
 end

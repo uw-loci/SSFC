@@ -12,6 +12,7 @@ function [ img_sets ] = SSFC_spatiotemporal_assignment( ...
 %   2020/02/03 - Finished
 
 
+
 switch data_order
     case 'XYZT'
         %% Iterate on Time Points

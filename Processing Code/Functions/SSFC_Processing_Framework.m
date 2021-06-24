@@ -1,6 +1,9 @@
 function [ ] = SSFC_Processing_Framework( proc_mode, ...
         save_intermediaries_flag, img_save_type, bit_depth, file_path, ...
-        pixel_size, pos_file_path, calibration_folder, wavelength_range )
+        data_order, pixel_size, pos_file_path, calibration_folder, ...
+        wavelength_range, automated_line_detection_flag, num_bands, ...
+        automated_spectral_finding_flag, spectral_finding_granularity, ...
+        spectral_boundary)
 %% Spectrally-Split Swept Field Confocal Processing Framework
 %   By: Niklas Gahm
 %   2018/08/01
@@ -19,16 +22,6 @@ function [ ] = SSFC_Processing_Framework( proc_mode, ...
 
 %% Setup the Workspace
 format longe; 
-
-automated_spectral_finding_flag = 0;
-spectral_finding_granularity = 10;
-% spectral_boundary = [490,570];
-spectral_boundary = [500, 580];
-
-automated_line_detection_flag = 0;
-num_bands = 32;
-
-data_order = 'TXYZ'; % Supports 'XYZT and TXYZ' Default is 'XYZT'
 
 
 %% Calculated Variables
