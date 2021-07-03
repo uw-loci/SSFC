@@ -80,8 +80,9 @@ unique_z_sorted = sort(unique_z);
 
 
 %% Determine 0 Padded Region in the X Dimension
+% In case Final Band goes all the way to the Image Edge
+pad_end = size(band_map,1);
 pad_start = 0;
-pad_end = 0;
 for i = 2:size(band_map,2)
     if (band_map(floor(size(band_map,1)/2), (i-1)) == 0) ...
             && (band_map(floor(size(band_map,1)/2), i) == 1)

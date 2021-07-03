@@ -25,52 +25,56 @@ arch_path = fpath;
 
 %% Check if Folder Already Sorted 
 dir_list = dir;
-if numel(dir_list) == 4
-    proc_found = 0;
-    unproc_found = 0;
-    for i = 3:4
-        if strcmp(dir_list(i).name, 'Processed Data')
-            proc_found = 1;
-        elseif strcmp(dir_list(i).name, 'Unprocessed Data')
-            unproc_found = 1;
-        end
+dir_list = dir_list(3:end);
+
+proc_found = 0;
+proc_ind = 0;
+unproc_found = 0;
+unproc_ind = 0;
+for i = 1:numel(dir_list)
+    if strcmp(dir_list(i).name, 'Processed Data')
+        proc_found = 1;
+        proc_ind = i;
+    elseif strcmp(dir_list(i).name, 'Unprocessed Data')
+        unproc_found = 1;
+        unproc_ind = i;
     end
-    
-    % Folder Partially Sorted
-    if unproc_found && ~proc_found
-        fprintf('\nCopying Files, This may take a while.\n');
-        copyfile('Unprocessed Data', 'Processed Data');
-        file_path = [arch_path '\Processed Data'];
-        % Clean Navigation
-        cd(hpath);
-        return;
-    end
-    
-    % Folder Already Sorted
-    if proc_found && unproc_found
-        % Get Confirmation Before Overwriting Previously Processed Data
-        confirmation_response = questdlg(['Are you sure you want to ' ...
-            'overwrite previously processed data in this folder?'], ...
-            'Overwrite Confirmation', 'Yes', 'No', 'No');
-        switch confirmation_response
-            case 'Yes'
-                fprintf('\nCopying Files, This may take a while.\n');
-                rmdir('Processed Data', 's');
-                copyfile('Unprocessed Data', 'Processed Data');
-                file_path = [arch_path '\Processed Data'];
-                % Clean Navigation
-                cd(hpath);
-                return;
-            case 'No'
-                % Clean Navigation
-                cd(hpath);
-                error(['No overwrite permission given. Please select ' ...
-                    'a different folder to process.']);
-            otherwise
-                % Clean Navigation
-                cd(hpath);
-                error('No overwrite confirmation given.');
-        end
+end
+
+% Folder Partially Sorted
+if unproc_found && ~proc_found
+    fprintf('\nCopying Files, This may take a while.\n');
+    copyfile('Unprocessed Data', 'Processed Data');
+    file_path = [arch_path '\Processed Data'];
+    % Clean Navigation
+    cd(hpath);
+    return;
+end
+
+% Folder Already Sorted
+if proc_found && unproc_found
+    % Get Confirmation Before Overwriting Previously Processed Data
+    confirmation_response = questdlg(['Are you sure you want to ' ...
+        'overwrite previously processed data in this folder?'], ...
+        'Overwrite Confirmation', 'Yes', 'No', 'No');
+    switch confirmation_response
+        case 'Yes'
+            fprintf('\nCopying Files, This may take a while.\n');
+            rmdir('Processed Data', 's');
+            copyfile('Unprocessed Data', 'Processed Data');
+            file_path = [arch_path '\Processed Data'];
+            % Clean Navigation
+            cd(hpath);
+            return;
+        case 'No'
+            % Clean Navigation
+            cd(hpath);
+            error(['No overwrite permission given. Please select ' ...
+                'a different folder to process.']);
+        otherwise
+            % Clean Navigation
+            cd(hpath);
+            error('No overwrite confirmation given.');
     end
 end
 

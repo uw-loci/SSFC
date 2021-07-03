@@ -139,16 +139,23 @@ for i = 1:img_dim_1
         calibration_set(strongest_line).image(i,:)));
     [~, ind] = maxk( peaks, num_bands);
     loc_ref_line = loc_ref(sort(ind));
+    starting_peak_val = peaks(ind(1));
     
     % Calculate the Between Band Distance
     avg_dist_btw_bands(i) = mean(loc_ref_line(2:end)-loc_ref_line(1:end-1));
     
-    % Store the first peak location
+    % Use the first peak location to estimate avg starting offset
     avg_starting_offset(i) = loc_ref_line(1);
 end
 
 % Get the average distance between band peaks.
 avg_dist_btw_bands = mean(avg_dist_btw_bands);
+
+% Clean the Avg Starting Offset Vector by removing outliers
+avg_starting_offset(avg_starting_offset < ...
+    (mean(avg_starting_offset) * 0.75)) = [];
+avg_starting_offset(avg_starting_offset > ...
+    (mean(avg_starting_offset) * 1.25)) = [];
 
 % Get the average starting offset 
 avg_starting_offset = mean(avg_starting_offset);
@@ -185,55 +192,56 @@ end
 % Get the range of offsets based on theoretical wavelength range
 wavelengths = extractfield(calibration_set, 'wavelength');
 offsets = extractfield(calibration_set, 'offset'); 
-p_coeffs = polyfit(wavelengths, offsets, 1);
-offset_range = polyval(p_coeffs, wavelength_range);
-
-% Check direction wavelength offsets are going
-if offset_range(2) < offset_range(1)
-    % Decreasing direction needs adjustement for interpolation
-    wavelengths = flip(wavelengths);
-    wavelength_range = flip(wavelength_range);
-    offsets = flip(offsets) - offsets(end);
-    offset_range = flip(offset_range) - offset_range(2);
+p_coeffs_wavelengths = polyfit(wavelengths, offsets, 1);
+p_coeffs_offsets = polyfit(offsets, wavelengths, 1);
+if max(wavelength_range) < max(wavelengths)
+    [~, max_ind] = max(wavelength_range);
+    wavelength_range = wavelength_range([1:(max_ind-1), (max_ind+1):end]);
 end
+offset_range = polyval(p_coeffs_wavelengths, wavelength_range);
 
-% Check that the range isn't too large
-if abs(offset_range(2)-offset_range(1)) > avg_dist_btw_bands
-    warning(['Input Theoretical Wavelength Range is larger than the' ...
-        ' actual range.']); 
+if numel(offset_range) == 2
     
-    offset_range_old = offset_range;
-    
-    % Adjust Offset Range
-    overhang = ceil((abs(offset_range(2)-offset_range(1)) - ...
-        avg_dist_btw_bands)/2);
-    offset_range(1) = offset_range(1) + overhang;
-    offset_range(2) = offset_range(2) - overhang;
-    
-    % Adjust Wavelength Range
-    wavelength_range = interp1(offset_range_old, wavelength_range, ...
-        offset_range, 'linear', 0);
-    
-    fprintf(['\n\nNew Wavelength Range: ' num2str(wavelength_range(1)) ...
-        'nm to ' num2str(wavelength_range(2)) 'nm\n\n']);
+    % Check that the range isn't too large
+    if abs(offset_range(2)-offset_range(1)) > avg_dist_btw_bands
+        warning(['Input Theoretical Wavelength Range is larger than the' ...
+            ' actual range.']);
+        
+        % Adjust Offset Range
+        overhang = ceil((abs(offset_range(2)-offset_range(1)) - ...
+            avg_dist_btw_bands)/2);
+        offset_range(offset_range == min(offset_range)) = ...
+            min(offset_range) + overhang;
+        offset_range(offset_range == max(offset_range)) = ...
+            max(offset_range) - overhang;
+        
+        % Adjust Wavelength Range
+        wavelength_range = polyval(p_coeffs_offsets, offset_range, 1);
+        
+        fprintf(['\n\nNew Wavelength Range: ' num2str(wavelength_range(1)) ...
+            'nm to ' num2str(wavelength_range(2)) 'nm\n\n']);
+    end
 end
 
 
 
 %% Generate Spectral Band
 % Add the wavelength range to the wavelengths
-wavelengths = [wavelength_range(1), wavelengths, wavelength_range(2)];
-
-% Adjust the average starting offset to reflect the start of the range
-if offset_range(2) < offset_range(1)
-    avg_starting_offset = abs(avg_starting_offset - abs(offset_range(2)));
-else
-    avg_starting_offset = abs(avg_starting_offset - abs(offset_range(1)));
-end
+[wavelengths, ind_wavelengths] = sort([wavelengths, wavelength_range], ...
+    'ascend');
 
 % Adjust the offsets such that the lowest wavelength sits at pixel 1 of the
 % band and encompasses the whole wavelength range 
-offsets = [offset_range(1), offsets, offset_range(2)] - offset_range(1);
+offsets = [offsets, offset_range];
+offsets = offsets(ind_wavelengths);
+
+offset_shift = min(offsets);
+offsets = offsets - offset_shift;
+
+% Adjust the average starting offset to reflect the start of the range
+% avg_starting_offset = avg_starting_offset + offset_shift;
+avg_starting_offset = avg_starting_offset + offset_shift - 3;
+% avg_starting_offset = avg_starting_offset + ;
 
 % Generate Positional Offsets
 positional_offsets = SSFC_calibration_positional_offset_generator( ...
@@ -252,9 +260,12 @@ for i = 2:numel(positional_offsets)
     end
 end
 
-% Interpolate to convert to spectral values
-spectral_band = interp1(offsets, wavelengths, positional_offsets, ...
-    'linear', 0);
+% Polyfit to get 
+p_coeffs_spectral = polyfit(offsets, wavelengths, 1);
+spectral_band = polyval(p_coeffs_spectral, positional_offsets);
+dummy_val = mode(spectral_band);
+spectral_band(spectral_band == dummy_val) = 0;
+
 
 
 %% Generate Calibration Space for the rotated sub-image approach
@@ -263,4 +274,7 @@ calibration_space = repmat(spectral_band, ...
 band_map = repmat(band_map, [size(calibration_set(1).image_rot,2), 1]);
 
 
+
+%% Build the Output Wavelength Range
+wavelength_range = [min(wavelengths), max(wavelengths)];
 end

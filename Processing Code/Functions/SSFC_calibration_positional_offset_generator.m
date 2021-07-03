@@ -24,7 +24,8 @@ strongest_line_ind = strongest_line_ind + 1;
 % This accounts for the addition of the interpolated end-point wavelengths
 % to the wavelengths vector. 
 
-loc_ref = round(loc_ref + offsets(strongest_line_ind)); 
+loc_ref = round(loc_ref + offsets(strongest_line_ind) ... 
+    - (loc_ref(1) - avg_starting_offset)); 
 % Moves the location reference vector to the band start
 
 

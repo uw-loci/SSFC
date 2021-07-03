@@ -81,9 +81,17 @@ for t = 1:num_t
         x_tiled = cell(1, num_y);
         for y = 1:num_y
             x_growth = cube_tiles_ordered{1, y, z};
+            % Check if the first tile requires flipping
+            if strcmp('+X', x_direction)
+                x_growth = fliplr(x_growth);
+            end
             for x = 2:num_x
                 x_tile = cube_tiles_ordered{x, y, z};
                 if strcmp('+X', x_direction)
+                    % Due to how acquisition operates, need to flip tiles
+                    % in X
+                    x_tile = fliplr(x_tile);
+                    
                     % Offset is generally not pixel perfect and therefore
                     % must be corrected for
                     if (x_offset/round(x_offset)) ~= 1
@@ -192,6 +200,10 @@ for t = 1:num_t
         
         %% Tiling in Y
         xy_growth = x_tiled{1};
+        % Check if first tile requires flipping
+        if strcmp(y_direction, '+Y')
+            xy_growth = flipud(xy_growth);
+        end
         for y = 2:num_y
             xy_tile = x_tiled{y};
             if strcmp(y_direction, '-Y')
@@ -246,6 +258,7 @@ for t = 1:num_t
                 
             % Case where Y tiles are added above the previous tile
             else
+                xy_tile = flipud(xy_tile);
                 % Offset is generally not pixel perfect, and therefore must
                 % be corrected for
                 if (y_offset/round(y_offset)) ~= 1
