@@ -1,7 +1,7 @@
 function [ calibration_space, prism_angle, band_map, wavelength_range ] ...
     = SSFC_calibration_spectra_constructor_v2( ...
     wavelength_range, calibration_folder, ...
-    automated_line_detection_flag, num_bands )
+    automated_line_detection_flag, num_bands, offset_shift_correction )
 %% SSFC Calibration Spectra Constructor
 %   By: Niklas Gahm
 %   2019/05/17
@@ -240,7 +240,8 @@ offsets = offsets - offset_shift;
 
 % Adjust the average starting offset to reflect the start of the range
 % avg_starting_offset = avg_starting_offset + offset_shift;
-avg_starting_offset = avg_starting_offset + offset_shift - 3;
+avg_starting_offset = avg_starting_offset + offset_shift ...
+    + offset_shift_correction;
 % avg_starting_offset = avg_starting_offset + ;
 
 % Generate Positional Offsets
