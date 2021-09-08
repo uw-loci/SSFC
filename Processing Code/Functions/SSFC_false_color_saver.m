@@ -26,7 +26,7 @@ switch proc_mode
         for i = 1:numel(img_sets)
             bfsave(img_bit_depth_converter( ...
                 img_sets(i).image_false_color, bit_depth), ...
-                [spath 'img' num2str(i) '.ome.tif']);
+                [spath '\img' num2str(i) '.ome.tif']);
             waitbar((i/numel(img_sets)), wait_element);
         end
         close(wait_element);

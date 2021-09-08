@@ -88,8 +88,8 @@ switch proc_mode
             img_cube_false(:,:,:,3,:) = img_cube_false(:,:,:,3,:) + ...
                 (img_cube(:,:,:,i,:) * false_color_RGB(i,3));
         end
-        max_false = max(max(max(max(img_cube_false))));
-        min_false = min(min(min(min(img_cube_false))));
+        max_false = max(img_cube_false, [], 'all');
+        min_false = min(img_cube_false, [], 'all');
         img_cube_false = (img_cube_false - min_false) / ...
             (max_false - min_false);
 end

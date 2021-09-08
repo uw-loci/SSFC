@@ -1,6 +1,9 @@
-function [ ] = SSFC_Processing_Framework( proc_mode, spectral_boundary, ...
+function [ ] = SSFC_Processing_Framework( proc_mode, ...
         save_intermediaries_flag, img_save_type, bit_depth, file_path, ...
-        pixel_size, pos_file_path, calibration_folder, wavelength_range )
+        data_order, pixel_size, pos_file_path, calibration_folder, ...
+        wavelength_range, automated_line_detection_flag, num_bands, ...
+        automated_spectral_finding_flag, spectral_finding_granularity, ...
+        spectral_boundary, offset_shift_correction)
 %% Spectrally-Split Swept Field Confocal Processing Framework
 %   By: Niklas Gahm
 %   2018/08/01
@@ -9,9 +12,10 @@ function [ ] = SSFC_Processing_Framework( proc_mode, spectral_boundary, ...
 %   reconstructed for a spectrally-split swept field confocal system.
 % 
 %   2018/08/01 - Started 
+%   2020/11/02 - Updated for Basic TXYZ Data Handling
 % 
 %   To-Do:
-%       - Enable 3D video processing. 
+%       - Potentially add a splitting mode for TXYZ data
 
 
 
@@ -46,12 +50,21 @@ fprintf('\nLoading Sub-Images\n');
 fprintf('\nGenerating Calibration Map\n');
 [calibration_map, prism_angle, band_map, wavelength_range] = ...
     SSFC_calibration_spectra_constructor_v2( wavelength_range, ...
-    calibration_folder);
+    calibration_folder, automated_line_detection_flag, num_bands, ...
+    offset_shift_correction);
 
 
 %% Sub Image Straightener 
 fprintf('\nStraightening Sub Images\n');
 img_sets = SSFC_straightener_v4( img_sets, prism_angle );
+
+
+%% Spectral Boundary Finding
+if automated_spectral_finding_flag == 1
+    fprintf('\nFinding Spectral Bounds\n');
+    spectral_boundary = spectral_boundary_finder(img_sets, ...
+        calibration_map, spectral_finding_granularity);
+end
 
 
 %% Reconstruct  
@@ -63,7 +76,8 @@ fprintf('\nConstructing Data Cubes\n');
 
 %% Assign Positional and Temporal Information 
 fprintf('\nAssigning Spatio Temporal Information to Data Cubes\n');
-[ img_sets ] = SSFC_spatiotemporal_assignment( img_sets, xyz_map);
+[ img_sets ] = SSFC_spatiotemporal_assignment( img_sets, xyz_map, ...
+    data_order);
 
 
 %% Save Individual Spectral Image Stacks
@@ -78,7 +92,8 @@ end
 img_cube = 0;
 if strcmp(proc_mode, 'Image Stack') || strcmp(proc_mode, 'Video')
     fprintf('\nTiling Images\n');
-    [img_cube] = SSFC_img_tiling(img_sets, xyz_map, pixel_size);
+    [img_cube] = SSFC_img_tiling(img_sets, xyz_map, pixel_size, ...
+        band_map, data_order);
     
     
 %% Save Tiled Raw Data
@@ -106,4 +121,3 @@ fprintf('\nProcessing Complete\n\n');
 %% Return to Starting Point
 cd(home_path);
 end
-

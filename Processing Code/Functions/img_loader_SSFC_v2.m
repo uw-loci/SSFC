@@ -110,7 +110,7 @@ loader_bar = waitbar((1/size(bf_reader_element,1)), ...
     'Loading sub-image sets.');
 for i = 1:size(bf_reader_element,1)
     waitbar((i/size(bf_reader_element,1)), loader_bar);
-    temp = bf_reader_element{(1+(i-1)), 1};
+    temp = bf_reader_element{i, 1};
     for j = 1:size(temp,1)
         img_sets(i).images{j} = double(temp{j,1});
     end
